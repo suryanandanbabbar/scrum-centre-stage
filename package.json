@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "deploy": "npx ng build --base-href=https://suryanandanbabbar.github.io/scrum-centre-stage/ && npx angular-cli-ghpages --dir=dist/scrum-centre-stage"
+    "deploy": "npx ng build --base-href=https://suryanandanbabbar.github.io/scrum-centre-stage/ && npx angular-cli-ghpages --dir=dist/scrum-centre-stage/browser"
   },
   "private": true,
   "packageManager": "npm@10.8.2",
