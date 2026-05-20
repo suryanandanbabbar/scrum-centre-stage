@@ -45,3 +45,7 @@ The production output is written to `dist/scrum-centre-stage/browser`.
 ```bash
 npm test
 ```
+
+---
+
+Contributions are appreciated!
