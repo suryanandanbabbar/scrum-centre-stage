@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "updatedAt": "2026-05-20T09:00:00.000Z",
+  "teamMembers": [
+    {
+      "id": "member-ana",
+      "name": "Ana Kapoor",
+      "role": "Product owner",
+      "email": "ana@example.com",
+      "capacity": 6,
+      "accent": "#007aff",
+      "active": true
+    },
+    {
+      "id": "member-lee",
+      "name": "Lee Chen",
+      "role": "Frontend engineer",
+      "email": "lee@example.com",
+      "capacity": 8,
+      "accent": "#34c759",
+      "active": true
+    },
+    {
+      "id": "member-mira",
+      "name": "Mira Santos",
+      "role": "QA lead",
+      "email": "mira@example.com",
+      "capacity": 7,
+      "accent": "#ff9500",
+      "active": true
+    },
+    {
+      "id": "member-omar",
+      "name": "Omar Wright",
+      "role": "Backend engineer",
+      "email": "omar@example.com",
+      "capacity": 8,
+      "accent": "#af52de",
+      "active": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "project-atlas",
+      "title": "Atlas Release Train",
+      "summary": "Coordinate the sprint work needed to ship workspace analytics and account health.",
+      "priority": "Critical",
+      "startDate": "2026-05-06",
+      "deadline": "2026-06-05",
+      "overdue": false,
+      "assigneeId": "member-ana",
+      "status": "In Progress",
+      "tasks": [
+        {
+          "id": "task-health",
+          "title": "Account health dashboard",
+          "description": "Ship the primary operator view for renewals and risk signals.",
+          "priority": "Critical",
+          "startDate": "2026-05-08",
+          "deadline": "2026-05-24",
+          "overdue": false,
+          "assigneeId": "member-lee",
+          "status": "In Progress",
+          "subtasks": [
+            {
+              "id": "subtask-health-widgets",
+              "title": "Risk widget layout",
+              "notes": "Use compact density for account comparison.",
+              "priority": "High",
+              "startDate": "2026-05-08",
+              "deadline": "2026-05-19",
+              "overdue": true,
+              "assigneeId": "member-lee",
+              "status": "Review"
+            },
+            {
+              "id": "subtask-health-empty",
+              "title": "Empty state QA",
+              "notes": "Verify clean state for new workspaces.",
+              "priority": "Medium",
+              "startDate": "2026-05-18",
+              "deadline": "2026-05-23",
+              "overdue": false,
+              "assigneeId": "member-mira",
+              "status": "Ready"
+            }
+          ]
+        },
+        {
+          "id": "task-data-sync",
+          "title": "Daily metric refresh",
+          "description": "Mock the frontend refresh pipeline against the JSON database.",
+          "priority": "High",
+          "startDate": "2026-05-11",
+          "deadline": "2026-05-29",
+          "overdue": false,
+          "assigneeId": "member-omar",
+          "status": "Ready",
+          "subtasks": [
+            {
+              "id": "subtask-sync-contract",
+              "title": "Metric contract review",
+              "notes": "Confirm required keys before demo data freeze.",
+              "priority": "High",
+              "startDate": "2026-05-11",
+              "deadline": "2026-05-22",
+              "overdue": false,
+              "assigneeId": "member-omar",
+              "status": "In Progress"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "project-lumen",
+      "title": "Lumen Mobile Polish",
+      "summary": "Close the quality pass for mobile onboarding and support handoff.",
+      "priority": "High",
+      "startDate": "2026-05-13",
+      "deadline": "2026-06-14",
+      "overdue": false,
+      "assigneeId": "member-mira",
+      "status": "Ready",
+      "tasks": [
+        {
+          "id": "task-onboarding",
+          "title": "Onboarding checklist",
+          "description": "Reduce first-run drop-off by clarifying setup steps.",
+          "priority": "High",
+          "startDate": "2026-05-13",
+          "deadline": "2026-06-01",
+          "overdue": false,
+          "assigneeId": "member-ana",
+          "status": "Backlog",
+          "subtasks": [
+            {
+              "id": "subtask-copy",
+              "title": "Checklist copy pass",
+              "notes": "Keep labels short and action-oriented.",
+              "priority": "Medium",
+              "startDate": "2026-05-13",
+              "deadline": "2026-05-21",
+              "overdue": false,
+              "assigneeId": "member-ana",
+              "status": "In Progress"
+            },
+            {
+              "id": "subtask-regression",
+              "title": "Regression sweep",
+              "notes": "Cover phone and tablet breakpoints.",
+              "priority": "High",
+              "startDate": "2026-05-24",
+              "deadline": "2026-06-03",
+              "overdue": false,
+              "assigneeId": "member-mira",
+              "status": "Backlog"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

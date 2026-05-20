@@ -1,0 +1,589 @@
+<div class="desktop">
+  <section class="window">
+    <header class="toolbar" aria-label="Application toolbar">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="traffic traffic-close"></span>
+        <span class="traffic traffic-minimize"></span>
+        <span class="traffic traffic-zoom"></span>
+      </div>
+
+      <button
+        class="icon-button"
+        type="button"
+        aria-label="Show or hide sidebar"
+        title="Sidebar"
+        (click)="sidebarOpen.set(!sidebarOpen())"
+      >
+        <svg lucidePanelLeft size="18"></svg>
+      </button>
+
+      <div class="toolbar-title">
+        <strong>Scrum Centre Stage</strong>
+        <span>{{ projects().length }} projects</span>
+      </div>
+
+      <div class="view-switch" role="tablist" aria-label="View mode">
+        @for (item of viewModes; track item.mode) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="viewMode() === item.mode"
+            [class.active]="viewMode() === item.mode"
+            (click)="setView(item.mode)"
+          >
+            @switch (item.mode) {
+              @case ('kanban') {
+                <svg lucideKanban size="16"></svg>
+              }
+              @case ('timeline') {
+                <svg lucideChartGantt size="16"></svg>
+              }
+              @case ('matrix') {
+                <svg lucideLayoutDashboard size="16"></svg>
+              }
+              @case ('minimal') {
+                <svg lucideListTree size="16"></svg>
+              }
+            }
+            <span>{{ item.label }}</span>
+          </button>
+        }
+      </div>
+
+      <label class="search-field">
+        <svg lucideSearch size="16"></svg>
+        <input
+          type="search"
+          placeholder="Search"
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </label>
+
+      <select
+        class="toolbar-select"
+        aria-label="Filter by assignee"
+        [ngModel]="assigneeFilter()"
+        (ngModelChange)="assigneeFilter.set($event)"
+      >
+        <option value="all">All teammates</option>
+        @for (member of teamMembers(); track member.id) {
+          <option [value]="member.id">{{ member.name }}</option>
+        }
+      </select>
+
+      <div class="toolbar-actions">
+        <button class="icon-button" type="button" title="Import JSON" aria-label="Import JSON" (click)="jsonFile.click()">
+          <svg lucideUpload size="17"></svg>
+        </button>
+        <input #jsonFile type="file" accept="application/json" hidden (change)="importDatabase($event)" />
+
+        <button class="icon-button" type="button" title="Export JSON" aria-label="Export JSON" (click)="exportDatabase()">
+          <svg lucideDownload size="17"></svg>
+        </button>
+
+        <button class="icon-button" type="button" title="Reset JSON" aria-label="Reset JSON" (click)="resetDatabase()">
+          <svg lucideRefreshCw size="17"></svg>
+        </button>
+
+        <button class="primary-button" type="button" (click)="openProjectEditor()">
+          <svg lucidePlus size="17"></svg>
+          <span>Project</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace" [class.sidebar-hidden]="!sidebarOpen()" [class.inspector-visible]="inspectorOpen()">
+      <aside class="sidebar" aria-label="Projects and team">
+        <div class="sidebar-section">
+          <div class="section-heading">
+            <span>Projects</span>
+            <button class="icon-button compact" type="button" title="New project" aria-label="New project" (click)="openProjectEditor()">
+              <svg lucideSquarePlus size="15"></svg>
+            </button>
+          </div>
+
+          <nav class="project-list" aria-label="Project list">
+            @for (project of projects(); track project.id) {
+              <button
+                class="project-row"
+                type="button"
+                [class.selected]="selectedProject().id === project.id"
+                (click)="selectProject(project.id)"
+              >
+                <span class="project-glyph" [ngClass]="priorityClass(project.priority)">
+                  <svg lucideFolderKanban size="16"></svg>
+                </span>
+                <span class="project-copy">
+                  <strong>{{ project.title }}</strong>
+                  <small>{{ project.status }} · {{ dueLabel(project) }}</small>
+                </span>
+                <svg lucideChevronRight size="14"></svg>
+              </button>
+            }
+          </nav>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="section-heading">
+            <span>Team</span>
+            <button class="icon-button compact" type="button" title="New member" aria-label="New member" (click)="openMemberEditor()">
+              <svg lucideUserPlus size="15"></svg>
+            </button>
+          </div>
+
+          <div class="member-list">
+            @for (member of teamMembers(); track member.id) {
+              <button class="member-row" type="button" (click)="openMemberEditor(member)">
+                <span class="avatar" [style.--accent]="member.accent">{{ initials(member.name) }}</span>
+                <span>
+                  <strong>{{ member.name }}</strong>
+                  <small>{{ totalOpenForMember(member.id) }} open · {{ member.capacity }} pts</small>
+                </span>
+              </button>
+            }
+          </div>
+        </div>
+      </aside>
+
+      <main class="stage" aria-live="polite">
+        @if (isLoading()) {
+          <div class="empty-state">
+            <svg lucideFileJson size="32"></svg>
+            <h1>Loading JSON</h1>
+          </div>
+        } @else if (selectedProject(); as project) {
+          <section class="stage-header">
+            <div>
+              <div class="eyebrow">
+                <span [ngClass]="priorityClass(project.priority)">{{ project.priority }}</span>
+                <span [ngClass]="statusClass(project.status)">{{ project.status }}</span>
+                @if (isOverdue(project)) {
+                  <span class="overdue-pill">
+                    <svg lucideCircleAlert size="14"></svg>
+                    Overdue
+                  </span>
+                }
+              </div>
+              <h1>{{ project.title }}</h1>
+              <p>{{ project.summary }}</p>
+            </div>
+
+            <div class="project-actions">
+              <button class="icon-button" type="button" title="Edit project" aria-label="Edit project" (click)="openProjectEditor(project)">
+                <svg lucidePencil size="17"></svg>
+              </button>
+              <button class="icon-button danger" type="button" title="Delete project" aria-label="Delete project" (click)="deleteProject(project.id)">
+                <svg lucideTrash2 size="17"></svg>
+              </button>
+              <button class="primary-button" type="button" (click)="openTaskEditor(project.id)">
+                <svg lucidePlus size="17"></svg>
+                <span>Task</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="metrics" aria-label="Project summary">
+            <div>
+              <strong>{{ selectedProjectStats().progress }}%</strong>
+              <span>Complete</span>
+              <div class="progress-track">
+                <span [style.width.%]="selectedProjectStats().progress"></span>
+              </div>
+            </div>
+            <div>
+              <strong>{{ selectedProjectStats().total }}</strong>
+              <span>Work items</span>
+            </div>
+            <div>
+              <strong>{{ selectedProjectStats().overdue }}</strong>
+              <span>Overdue</span>
+            </div>
+            <div>
+              <strong>{{ memberName(project.assigneeId) }}</strong>
+              <span>Project lead</span>
+            </div>
+            <div>
+              <strong>{{ project.deadline | date: 'MMM d' }}</strong>
+              <span>Deadline</span>
+            </div>
+          </section>
+
+          @switch (viewMode()) {
+            @case ('kanban') {
+              <section class="kanban-board" aria-label="Kanban board">
+                @for (column of kanbanColumns(); track column.status) {
+                  <div class="kanban-column">
+                    <header>
+                      <span>{{ column.status }}</span>
+                      <strong>{{ column.tasks.length }}</strong>
+                    </header>
+
+                    <div class="task-stack">
+                      @for (task of column.tasks; track task.id) {
+                        <article class="task-card" [class.is-overdue]="isOverdue(task)">
+                          <div class="task-card-top">
+                            <span class="priority-dot" [ngClass]="priorityClass(task.priority)"></span>
+                            <h2>{{ task.title }}</h2>
+                            <div class="card-actions">
+                              <button class="icon-button compact" type="button" title="Edit task" aria-label="Edit task" (click)="openTaskEditor(project.id, task)">
+                                <svg lucidePencil size="14"></svg>
+                              </button>
+                              <button class="icon-button compact danger" type="button" title="Delete task" aria-label="Delete task" (click)="deleteTask(project.id, task.id)">
+                                <svg lucideTrash2 size="14"></svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          <p>{{ task.description }}</p>
+
+                          <div class="task-meta">
+                            <span class="avatar mini" [style.--accent]="memberById(task.assigneeId)?.accent">{{ initials(memberName(task.assigneeId)) }}</span>
+                            <span>{{ dueLabel(task) }}</span>
+                            <span>{{ subtasksDone(task) }}/{{ task.subtasks.length }} subtasks</span>
+                          </div>
+
+                          <div class="status-control">
+                            <select
+                              aria-label="Task status"
+                              [ngModel]="task.status"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="moveTask(project.id, task.id, $event)"
+                            >
+                              @for (status of statuses; track status) {
+                                <option [value]="status">{{ status }}</option>
+                              }
+                            </select>
+                            <button class="icon-button compact" type="button" title="New subtask" aria-label="New subtask" (click)="openSubtaskEditor(project.id, task.id)">
+                              <svg lucideListChecks size="14"></svg>
+                            </button>
+                          </div>
+
+                          @if (task.subtasks.length) {
+                            <ul class="subtask-list">
+                              @for (subtask of task.subtasks; track subtask.id) {
+                                <li [class.done]="subtask.status === 'Done'" [class.overdue]="isOverdue(subtask)">
+                                  <span>
+                                    @if (subtask.status === 'Done') {
+                                      <svg lucideCircleCheck size="14"></svg>
+                                    } @else {
+                                      <svg lucideCalendarClock size="14"></svg>
+                                    }
+                                    {{ subtask.title }}
+                                  </span>
+                                  <span>{{ memberName(subtask.assigneeId) }}</span>
+                                  <button class="icon-button compact" type="button" title="Edit subtask" aria-label="Edit subtask" (click)="openSubtaskEditor(project.id, task.id, subtask)">
+                                    <svg lucidePencil size="13"></svg>
+                                  </button>
+                                  <button class="icon-button compact danger" type="button" title="Delete subtask" aria-label="Delete subtask" (click)="deleteSubtask(project.id, task.id, subtask.id)">
+                                    <svg lucideTrash2 size="13"></svg>
+                                  </button>
+                                </li>
+                              }
+                            </ul>
+                          }
+                        </article>
+                      } @empty {
+                        <div class="empty-column">No tasks</div>
+                      }
+                    </div>
+                  </div>
+                }
+              </section>
+            }
+
+            @case ('timeline') {
+              <section class="timeline" aria-label="Timeline view">
+                <div class="timeline-scroller">
+                  <div class="timeline-head" [style.grid-template-columns]="timelineTemplate()">
+                    <span>Work item</span>
+                    @for (day of timelineDays(); track day) {
+                      <span>{{ day | date: 'MMM d' }}</span>
+                    }
+                  </div>
+
+                  @for (row of timelineRows(); track row.id) {
+                    <div class="timeline-line" [style.grid-template-columns]="timelineTemplate()">
+                      <button
+                        class="timeline-label"
+                        type="button"
+                        [class.indented]="row.depth === 1"
+                        (click)="openTimelineRow(row)"
+                      >
+                        <span class="priority-dot" [ngClass]="priorityClass(row.priority)"></span>
+                        <span>{{ row.title }}</span>
+                      </button>
+                      <div class="timeline-track" [style.grid-template-columns]="timelineTrackTemplate()">
+                        <button
+                          class="timeline-bar"
+                          type="button"
+                          [class.is-overdue]="isOverdue(row)"
+                          [ngClass]="statusClass(row.status)"
+                          [style.grid-column]="timelineSpan(row)"
+                          (click)="openTimelineRow(row)"
+                        >
+                          <span>{{ memberName(row.assigneeId) }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="empty-state compact-state">No scheduled work</div>
+                  }
+                </div>
+              </section>
+            }
+
+            @case ('matrix') {
+              <section class="matrix" aria-label="Team project matrix">
+                <div class="matrix-grid" [style.grid-template-columns]="matrixTemplate()">
+                  <div class="matrix-heading">
+                    <svg lucideUsers size="16"></svg>
+                    Team
+                  </div>
+                  @for (projectColumn of projects(); track projectColumn.id) {
+                    <button class="matrix-project" type="button" (click)="selectProject(projectColumn.id)">
+                      <strong>{{ projectColumn.title }}</strong>
+                      <span>{{ projectColumn.priority }}</span>
+                    </button>
+                  }
+
+                  @for (member of teamMembers(); track member.id) {
+                    <button class="matrix-member" type="button" (click)="openMemberEditor(member)">
+                      <span class="avatar" [style.--accent]="member.accent">{{ initials(member.name) }}</span>
+                      <span>
+                        <strong>{{ member.name }}</strong>
+                        <small>{{ member.role }}</small>
+                      </span>
+                    </button>
+
+                    @for (projectColumn of projects(); track projectColumn.id) {
+                      @let cell = matrixCell(member.id, projectColumn.id);
+                      <button
+                        class="matrix-cell"
+                        type="button"
+                        [class.has-overdue]="cell.overdue > 0"
+                        [class.has-work]="cell.open > 0"
+                        (click)="selectProject(projectColumn.id); assigneeFilter.set(member.id)"
+                      >
+                        <strong>{{ cell.open }}</strong>
+                        <span>open</span>
+                        @if (cell.overdue) {
+                          <small>{{ cell.overdue }} overdue</small>
+                        } @else if (cell.critical) {
+                          <small>{{ cell.critical }} critical</small>
+                        } @else {
+                          <small>clear</small>
+                        }
+                      </button>
+                    }
+                  }
+                </div>
+              </section>
+            }
+
+            @case ('minimal') {
+              <section class="minimal-view" aria-label="Minimal sequential view">
+                @for (group of minimalGroups(); track group.project.id) {
+                  <section class="minimal-project">
+                    <header>
+                      <div>
+                        <h2>{{ group.project.title }}</h2>
+                        <span>{{ group.project.startDate | date: 'MMM d' }} - {{ group.project.deadline | date: 'MMM d' }}</span>
+                      </div>
+                      <span [ngClass]="priorityClass(group.project.priority)">{{ group.project.priority }}</span>
+                    </header>
+
+                    @for (memberGroup of group.members; track memberGroup.member.id) {
+                      <div class="minimal-member">
+                        <div class="minimal-member-head">
+                          <span class="avatar mini" [style.--accent]="memberGroup.member.accent">{{ initials(memberGroup.member.name) }}</span>
+                          <strong>{{ memberGroup.member.name }}</strong>
+                        </div>
+
+                        @if (memberGroup.entries.length) {
+                          <ol class="minimal-list">
+                            @for (entry of memberGroup.entries; track entry.task.id) {
+                              <li>
+                                <button type="button" (click)="selectProject(group.project.id); openTaskEditor(group.project.id, entry.task)">
+                                  <span>{{ entry.task.title }}</span>
+                                  <small>{{ entry.task.status }} · {{ dueLabel(entry.task) }}</small>
+                                </button>
+                                @if (entry.subtasks.length) {
+                                  <ol>
+                                    @for (subtask of entry.subtasks; track subtask.id) {
+                                      <li>
+                                        <button
+                                          type="button"
+                                          (click)="selectProject(group.project.id); openSubtaskEditor(group.project.id, entry.task.id, subtask)"
+                                        >
+                                          <span>{{ subtask.title }}</span>
+                                          <small>{{ subtask.status }} · {{ dueLabel(subtask) }}</small>
+                                        </button>
+                                      </li>
+                                    }
+                                  </ol>
+                                }
+                              </li>
+                            }
+                          </ol>
+                        } @else {
+                          <span class="quiet-line">No assigned work</span>
+                        }
+                      </div>
+                    }
+                  </section>
+                }
+              </section>
+            }
+          }
+        } @else {
+          <div class="empty-state">
+            <svg lucideFolderKanban size="36"></svg>
+            <h1>No projects yet</h1>
+            <button class="primary-button" type="button" (click)="openProjectEditor()">
+              <svg lucidePlus size="17"></svg>
+              <span>Project</span>
+            </button>
+          </div>
+        }
+      </main>
+
+      @if (inspectorOpen()) {
+        <aside class="inspector" aria-label="Editor">
+          <header>
+            <div>
+              <span>{{ editorMode() }}</span>
+              <h2>{{ editorTitle() }}</h2>
+            </div>
+            <button class="icon-button" type="button" title="Close" aria-label="Close inspector" (click)="closeInspector()">
+              <svg lucideX size="18"></svg>
+            </button>
+          </header>
+
+          <form #editorForm="ngForm" class="editor-form" (ngSubmit)="saveEditor()">
+            @if (editorType() !== 'member') {
+              <label>
+                <span>Title</span>
+                <input name="title" required [(ngModel)]="draft['title']" />
+              </label>
+
+              @if (editorType() === 'project') {
+                <label>
+                  <span>Summary</span>
+                  <textarea name="summary" rows="4" [(ngModel)]="draft['summary']"></textarea>
+                </label>
+              }
+
+              @if (editorType() === 'task') {
+                <label>
+                  <span>Description</span>
+                  <textarea name="description" rows="4" [(ngModel)]="draft['description']"></textarea>
+                </label>
+              }
+
+              @if (editorType() === 'subtask') {
+                <label>
+                  <span>Notes</span>
+                  <textarea name="notes" rows="4" [(ngModel)]="draft['notes']"></textarea>
+                </label>
+              }
+
+              <div class="form-grid">
+                <label>
+                  <span>Start</span>
+                  <input name="startDate" type="date" required [(ngModel)]="draft['startDate']" />
+                </label>
+                <label>
+                  <span>Deadline</span>
+                  <input name="deadline" type="date" required [(ngModel)]="draft['deadline']" />
+                </label>
+              </div>
+
+              <div class="form-grid">
+                <label>
+                  <span>Priority</span>
+                  <select name="priority" required [(ngModel)]="draft['priority']">
+                    @for (priority of priorities; track priority) {
+                      <option [value]="priority">{{ priority }}</option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select name="status" required [(ngModel)]="draft['status']">
+                    @for (status of statuses; track status) {
+                      <option [value]="status">{{ status }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                <span>Assignee</span>
+                <select name="assigneeId" required [(ngModel)]="draft['assigneeId']">
+                  @for (member of teamMembers(); track member.id) {
+                    <option [value]="member.id">{{ member.name }}</option>
+                  }
+                </select>
+              </label>
+            } @else {
+              <label>
+                <span>Name</span>
+                <input name="name" required [(ngModel)]="draft['name']" />
+              </label>
+              <label>
+                <span>Role</span>
+                <input name="role" required [(ngModel)]="draft['role']" />
+              </label>
+              <label>
+                <span>Email</span>
+                <input name="email" type="email" [(ngModel)]="draft['email']" />
+              </label>
+              <label>
+                <span>Capacity</span>
+                <input name="capacity" type="number" min="1" max="20" required [(ngModel)]="draft['capacity']" />
+              </label>
+
+              <div class="swatches" role="radiogroup" aria-label="Member color">
+                @for (accent of accents; track accent) {
+                  <button
+                    type="button"
+                    role="radio"
+                    [attr.aria-checked]="draft['accent'] === accent"
+                    [class.selected]="draft['accent'] === accent"
+                    [style.--accent]="accent"
+                    (click)="draft['accent'] = accent"
+                  >
+                    @if (draft['accent'] === accent) {
+                      <svg lucideCheck size="14"></svg>
+                    }
+                  </button>
+                }
+              </div>
+
+              <label class="checkbox-row">
+                <input name="active" type="checkbox" [(ngModel)]="draft['active']" />
+                <span>Active</span>
+              </label>
+
+              @if (editorMode() === 'edit') {
+                <button class="secondary-button danger-text" type="button" (click)="deleteMember(draft['id'] + '')">
+                  <svg lucideTrash2 size="16"></svg>
+                  <span>Delete member</span>
+                </button>
+              }
+            }
+
+            <footer>
+              <button class="secondary-button" type="button" (click)="closeInspector()">Cancel</button>
+              <button class="primary-button" type="submit" [disabled]="editorForm.invalid">
+                <svg lucideSave size="17"></svg>
+                <span>Save</span>
+              </button>
+            </footer>
+          </form>
+        </aside>
+      }
+    </div>
+  </section>
+</div>
